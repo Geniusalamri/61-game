@@ -1,0 +1,16 @@
+{
+  "name": "@61-game/ui",
+  "version": "0.0.0",
+  "private": true,
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@61-game/shared": "workspace:*",
+    "three": "^0.156.1",
+    "zustand": "^4.4.4",
+    "howler": "^2.2.3"
+  },
+  "devDependencies": {}
+}

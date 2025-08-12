@@ -1,0 +1,14 @@
+{
+  "name": "@61-game/engine",
+  "version": "0.0.0",
+  "private": true,
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "vitest watch --dir src"
+  },
+  "dependencies": {
+    "@61-game/shared": "workspace:*"
+  },
+  "devDependencies": {}
+}

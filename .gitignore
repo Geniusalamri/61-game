@@ -1,0 +1,11 @@
+node_modules
+dist
+.turbo
+.parcel-cache
+.eslintcache
+.cache
+coverage
+.vitest
+*.log
+playwright-report
+*.DS_Store
