@@ -140,6 +140,143 @@ export class PunishmentQueue {
 }
 
 /**
+ * Full match state for a complete 61 hand.  Extends the demo state to
+ * support continuous drawing from the deck and full 6‑trick play.  This
+ * structure is internal to the engine; consumers can inspect scores and
+ * logs after playHand() completes.
+ */
+export interface MatchState {
+  /** Seed used to initialise the RNG */
+  seed: string;
+  /** Remaining draw pile */
+  deck: Card[];
+  /** Trump suit (called the ruler) */
+  trump: Suit;
+  /** Index (0–5) of the player who will lead the next trick */
+  leadPlayer: number;
+  /** 6 player hands, each containing 0–3 cards */
+  hands: Card[][];
+  /** Team scores for this hand */
+  scores: [number, number];
+  /** Accumulated points from tied tricks */
+  tiePoints: number;
+  /** Queue of punishment submissions (currently unused but carried through) */
+  punishment: PunishmentQueue;
+  /** Log of each play in order */
+  log: { player: number; card: Card; action: string }[];
+}
+
+/**
+ * Initialise a full 61 match.  Deals 3 cards to each of 6 players and
+ * determines the trump suit from the top of the draw pile.  The initial
+ * lead is seat 0.
+ */
+export function initMatch(seed: string): MatchState {
+  const rng = createRng(stringToSeed(seed));
+  const deck = createShuffledDeck(rng);
+  const hands: Card[][] = Array.from({ length: 6 }, () => []);
+  for (let i = 0; i < 3; i++) {
+    for (let p = 0; p < 6; p++) {
+      hands[p].push(deck.shift()!);
+    }
+  }
+  // Determine trump from the top of the remaining draw pile
+  const trumpCard = deck[0];
+  const trump = trumpCard.suit;
+  return {
+    seed,
+    deck,
+    trump,
+    leadPlayer: 0,
+    hands,
+    scores: [0, 0],
+    tiePoints: 0,
+    punishment: new PunishmentQueue(),
+    log: [],
+  };
+}
+
+/**
+ * Helper to draw cards after a trick.  The winner draws first, then the
+ * remaining players clockwise until everyone has three cards or the deck
+ * is empty.  Modifies state in place.
+ */
+function drawAfterTrick(state: MatchState, winner: number): void {
+  // Determine the order in which players draw: winner first, then clockwise
+  for (let offset = 0; offset < 6; offset++) {
+    const player = (winner + offset) % 6;
+    while (state.hands[player].length < 3 && state.deck.length > 0) {
+      const card = state.deck.shift()!;
+      state.hands[player].push(card);
+    }
+  }
+}
+
+/**
+ * Play an entire hand until all cards are exhausted.  This function is
+ * primarily intended for simulations and internal testing; user interfaces
+ * should call lower‑level routines to handle interactive play.
+ *
+ * It uses a trivial strategy for play: each player simply plays the
+ * first card in their hand when it is their turn.  Following suit is
+ * not enforced by the updated rules, so any card may be played.
+ *
+ * Returns the final match state after all cards have been played.
+ */
+export function playHand(state: MatchState): MatchState {
+  // Continue until all hands are empty
+  let cardsRemaining = state.hands.reduce((acc, h) => acc + h.length, 0);
+  while (cardsRemaining > 0) {
+    // Determine play order for this trick starting from leadPlayer
+    const plays: TrickPlay[] = [];
+    for (let i = 0; i < 6; i++) {
+      const player = (state.leadPlayer + i) % 6;
+      const hand = state.hands[player];
+      if (hand.length === 0) {
+        continue; // no card to play (should not happen in a proper hand)
+      }
+      // Simple strategy: play the first card in the hand
+      const card = hand.shift()!;
+      plays.push({ player, card });
+      state.log.push({ player, card, action: 'play' });
+    }
+    // Resolve the trick
+    const result = resolveTrick(plays, state.trump);
+    // Collect points
+    if (result.tie) {
+      state.tiePoints += result.points;
+      // lead remains the same
+    } else if (result.winner !== null) {
+      const team = teamOfPlayer(result.winner);
+      state.scores[team] += result.points + state.tiePoints;
+      state.tiePoints = 0;
+      // update lead; lead only changes when the winning team changes
+      state.leadPlayer = nextLead(state.leadPlayer, result.winner);
+      // Draw cards for next trick if deck has cards
+      if (state.deck.length > 0) {
+        drawAfterTrick(state, result.winner);
+      }
+    }
+    cardsRemaining = state.hands.reduce((acc, h) => acc + h.length, 0);
+  }
+  return state;
+}
+
+/**
+ * Generate a human‑readable log for a full hand.  Includes seed, trump,
+ * moves and final scores.  This extends the demo version by including
+ * all cards played in sequence.
+ */
+export function generateMatchLog(state: MatchState): string {
+  let out = `Seed: ${state.seed}\nTrump: ${state.trump}\n`;
+  state.log.forEach((entry, idx) => {
+    out += `Move ${idx + 1}: Player ${entry.player + 1} played ${entry.card.rank}${suitSymbol(entry.card.suit)}\n`;
+  });
+  out += `Scores – Team A: ${state.scores[0]}, Team B: ${state.scores[1]}\n`;
+  return out;
+}
+
+/**
  * Game state for a simplified two‑trick demo.  This is not a full match implementation
  * but provides the minimal data needed for demonstration and testing.
  */
