@@ -37,6 +37,19 @@ Unit tests are written with [Vitest](https://vitest.dev/) and live under individ
 pnpm test
 ```
 
+### Running the simulation CLI
+
+During engine development, a small simulation utility is available to exercise the deterministic rules on a few sample rounds.  It lives in the engine package and runs several demo matches using distinct seeds, printing a human‑readable log of the moves and final scores.
+
+Run it with pnpm:
+
+```bash
+pnpm sim            # runs 5 demo matches and prints logs
+pnpm sim 10         # runs 10 demo matches
+```
+
+Each demo prints the seed, the trump suit, every move (player and card), and the cumulative scores.  This is useful for sanity‑checking logic and for property‑based test generation.
+
 ### Running end‑to‑end tests
 
 [Playwright](https://playwright.dev/) is configured for E2E smoke tests.  To run the E2E tests headlessly:
@@ -83,4 +96,3 @@ The monorepo is organised into several top‑level folders:
 ## Next steps
 
 Loop 0 sets up the scaffolding and CI.  The next loop focuses on implementing the pure rules engine in `packages/engine` with high unit test coverage.  See `ASSUMPTIONS.md` for any documented simplifications during implementation.
-# 61-game

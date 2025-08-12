@@ -5,7 +5,8 @@
   "main": "src/index.ts",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "dev": "vitest watch --dir src"
+    "dev": "vitest watch --dir src",
+    "sim": "node dist/sim.js"
   },
   "dependencies": {
     "@61-game/shared": "workspace:*"

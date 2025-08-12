@@ -1,7 +1,7 @@
 // Shared types, constants and utilities.
 
 export type Suit = 'spades' | 'hearts' | 'diamonds' | 'clubs';
-export type Rank = 'A' | 'K' | 'Q' | 'J' | '7' | '6' | '5' | '4' | '3';
+export type Rank = 'A' | '7' | 'K' | 'Q' | 'J' | '6' | '5' | '4' | '3';
 
 export interface Card {
   suit: Suit;
@@ -11,10 +11,10 @@ export interface Card {
 // Points per rank according to the game rules.
 export const POINTS: Record<Rank, number> = {
   A: 11,
-  K: 4,
-  Q: 2,
-  J: 3,
   '7': 10,
+  K: 4,
+  J: 3,
+  Q: 2,
   '6': 0,
   '5': 0,
   '4': 0,
@@ -25,4 +25,15 @@ export const POINTS: Record<Rank, number> = {
 export const SUITS: Suit[] = ['spades', 'hearts', 'diamonds', 'clubs'];
 
 // Ranks in strength order (highest first).
-export const RANK_ORDER: Rank[] = ['A', 'K', 'Q', 'J', '7', '6', '5', '4', '3'];
+// New ranking order according to updated rules: 7 outranks K, Q, J
+export const RANK_ORDER: Rank[] = [
+  'A',
+  '7',
+  'K',
+  'Q',
+  'J',
+  '6',
+  '5',
+  '4',
+  '3',
+];
