@@ -164,6 +164,16 @@ export interface MatchState {
   punishment: PunishmentQueue;
   /** Log of each play in order */
   log: { player: number; card: Card; action: string }[];
+
+  /** The card that determines the trump suit, revealed at the start of the hand. */
+  trumpCard: Card;
+
+  /**
+   * Current trick in progress.  Plays accumulate here until six cards have
+   * been played, at which point the trick is resolved and cleared.  Each
+   * entry records the player index and the card they played.
+   */
+  currentTrick?: TrickPlay[];
 }
 
 /**
@@ -183,6 +193,9 @@ export function initMatch(seed: string): MatchState {
   // Determine trump from the top of the remaining draw pile
   const trumpCard = deck[0];
   const trump = trumpCard.suit;
+  // Move the trump card to the bottom of the draw pile so it is drawn last
+  deck.shift();
+  deck.push(trumpCard);
   return {
     seed,
     deck,
@@ -193,6 +206,7 @@ export function initMatch(seed: string): MatchState {
     tiePoints: 0,
     punishment: new PunishmentQueue(),
     log: [],
+    trumpCard,
   };
 }
 
@@ -260,6 +274,70 @@ export function playHand(state: MatchState): MatchState {
     cardsRemaining = state.hands.reduce((acc, h) => acc + h.length, 0);
   }
   return state;
+}
+
+/**
+ * Return the list of legal moves for a given player.  Under the updated
+ * rules, following suit is optional, so the only constraint is that
+ * players must have at least one card.  If it is not the player's turn
+ * (based on lead and plays so far), an empty array is returned.
+ */
+export function legalMoves(state: MatchState, player: number): Card[] {
+  // Determine whose turn it is in the current trick
+  const trick = state.currentTrick ?? [];
+  const turnPlayer = (state.leadPlayer + trick.length) % 6;
+  if (player !== turnPlayer) return [];
+  return [...state.hands[player]];
+}
+
+/**
+ * Play a card in the interactive match.  Validates that it is the
+ * player's turn and that the card exists in their hand.  Appends the
+ * play to the current trick.  When six cards have been played, it
+ * resolves the trick, updates scores, handles ties and drawing, and
+ * sets up the next trick.  Mutates state in place.
+ */
+export function playCard(state: MatchState, player: number, card: Card): void {
+  // Ensure it's the player's turn
+  const trick = state.currentTrick ?? [];
+  const turnPlayer = (state.leadPlayer + trick.length) % 6;
+  if (player !== turnPlayer) {
+    throw new Error(`It's not player ${player}'s turn`);
+  }
+  // Find and remove the card from the player's hand
+  const hand = state.hands[player];
+  const idx = hand.findIndex((c) => c.rank === card.rank && c.suit === card.suit);
+  if (idx === -1) {
+    throw new Error('Player does not have that card');
+  }
+  hand.splice(idx, 1);
+  // Append to current trick
+  if (!state.currentTrick) state.currentTrick = [];
+  state.currentTrick.push({ player, card });
+  // Add to log
+  state.log.push({ player, card, action: 'play' });
+  // If six cards played or everyone is out of cards (end of hand), resolve trick
+  const trickComplete = state.currentTrick.length === 6;
+  if (trickComplete) {
+    const plays = state.currentTrick;
+    state.currentTrick = [];
+    const result = resolveTrick(plays, state.trump);
+    if (result.tie) {
+      // Accumulate tie points
+      state.tiePoints += result.points;
+      // lead remains the same
+    } else if (result.winner !== null) {
+      const team = teamOfPlayer(result.winner);
+      state.scores[team] += result.points + state.tiePoints;
+      state.tiePoints = 0;
+      // Update lead: lead only changes when winner belongs to another team
+      state.leadPlayer = nextLead(state.leadPlayer, result.winner);
+      // Draw cards for next trick if deck has cards
+      if (state.deck.length > 0) {
+        drawAfterTrick(state, result.winner);
+      }
+    }
+  }
 }
 
 /**

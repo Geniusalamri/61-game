@@ -4,9 +4,188 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>61 Game</title>
+    <style>
+      body, html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, sans-serif;
+        background: radial-gradient(1200px 600px at 20% -10%, #1d2956, #0a0e21 70%);
+        color: #f6f7fb;
+      }
+      .game-container {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+      .controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 16px;
+        background: #08112d;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .scores {
+        font-size: 1.2rem;
+        font-weight: 700;
+      }
+      .buttons > button {
+        margin-left: 8px;
+        padding: 6px 12px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: linear-gradient(180deg, #1a2148, #131a3b);
+        color: #f6f7fb;
+        cursor: pointer;
+      }
+      .game-area {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 16px;
+      }
+      .board-area {
+        position: relative;
+        flex: 1;
+        display: grid;
+        grid-template-columns: 1fr;
+        align-items: center;
+        justify-items: center;
+      }
+      .center-area {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        pointer-events: none;
+        /* ensure central area sits below seat labels */
+        z-index: 1;
+      }
+      /* Container to stack draw pile and trump card */
+      .pile-container {
+        position: relative;
+        width: 50px;
+        height: 70px;
+        /* Shift the pile to the left/up so that played cards don't overlap it */
+        transform: translate(-80px, -20px);
+      }
+      .pile {
+        width: 100%;
+        height: 100%;
+        border-radius: 6px;
+        background: repeating-linear-gradient(45deg, #173, #173 6px, #0a4 6px, #0a4 12px);
+        border: 1px solid #031;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+      .pile::after {
+        content: attr(data-count);
+        position: absolute;
+        bottom: -1.4rem;
+        left: 50%;
+        transform: translateX(-50%);
+        color: #a9b0c7;
+        font-size: 0.8rem;
+      }
+      .trump-card {
+        width: 60px;
+        height: 90px;
+        position: absolute;
+        /* position the trump card so that its tip is tucked under the draw pile */
+        top: 45px;
+        left: 50%;
+        transform: translate(-50%, 0) rotate(-90deg);
+        border-radius: 6px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+      }
+      .table-cards {
+        position: relative;
+        display: flex;
+        align-items: flex-end;
+        min-height: 90px;
+      }
+      .slot {
+        position: absolute;
+        width: 100px;
+        height: 120px;
+        border: 1px dashed rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #a9b0c7;
+        font-size: 0.8rem;
+        /* ensure seat labels render above central deck/trump */
+        z-index: 2;
+      }
+      .card {
+        width: 60px;
+        height: 90px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 4px;
+        background: #ffffff;
+        color: #111;
+        cursor: pointer;
+      }
+      .card.dim {
+        opacity: 0.5;
+        filter: grayscale(60%);
+        cursor: default;
+      }
+      .card .top, .card .bottom {
+        font-weight: 800;
+      }
+      .card .middle {
+        text-align: center;
+        font-size: 1.2rem;
+      }
+      .hand-area {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        padding: 8px 0;
+      }
+    </style>
   </head>
   <body>
-    <div id="app" style="width: 100vw; height: 100vh;"></div>
+    <div id="app" class="game-container">
+      <header class="controls">
+        <div class="scores">
+          <span id="scoreA">0</span> – <span id="scoreB">0</span>
+        </div>
+        <div class="buttons">
+          <button id="btnNew">New Game</button>
+          <button id="btnDownload">Download Log</button>
+          <button id="btnLang">AR</button>
+        </div>
+      </header>
+      <main class="game-area">
+        <div id="board" class="board-area">
+          <div id="center" class="center-area">
+            <div class="pile-container">
+              <div id="drawPile" class="pile"></div>
+              <div id="trumpCard" class="trump-card"></div>
+            </div>
+            <div id="tableCards" class="table-cards"></div>
+          </div>
+        </div>
+        <div id="hand" class="hand-area"></div>
+      </main>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
